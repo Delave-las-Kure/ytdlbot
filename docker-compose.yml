@@ -35,6 +35,8 @@ services:
       - redis
     volumes:
       - ./data/vnstat/:/var/lib/vnstat/
+      - sessions:/var/sessions
+      - ./texts:/ytdlbot/texts
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
@@ -60,3 +62,6 @@ services:
     volumes:
       - ./data/premium.session:/ytdlbot/ytdlbot/premium.session
     command: [ "/usr/local/bin/python",  "/ytdlbot/ytdlbot/premium.py" ]
+
+volumes:
+  sessions:

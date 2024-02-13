@@ -39,6 +39,7 @@ services:
     volumes:
       - ./data/vnstat/:/var/lib/vnstat/
       - sessions:/var/sessions
+      - ./texts:/ytdlbot/texts
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
