@@ -1,0 +1,30 @@
+**Terms:**
+1. You can use this bot to download video for {FREE_DOWNLOAD} times within a 24-hour period.
+
+2. You can buy additional download tokens, valid permanently.
+
+3. Refunds are possible, contact me if you need that @BennyThink
+
+4. Download for paid user will be automatically changed to Local mode to avoid queuing.
+
+5. Paid user can download files larger than 2GB.
+
+**Price:**
+valid permanently
+1. 1 USD == {TOKEN_PRICE} tokens
+2. 7 CNY == {TOKEN_PRICE} tokens
+3. 10 TRX == {TOKEN_PRICE} tokens
+
+**Payment options:**
+Pay any amount you want. For example you can send 20 TRX for {TOKEN_PRICE} tokens.
+1. AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
+2. Buy me a coffee: {COFFEE_LINK}
+3. Telegram Bot Payment(Stripe), please click Bot Payment button.
+4. TRON(TRX), please click TRON(TRX) button.
+
+**After payment:**
+1. Afdian: attach order number with /redeem command (e.g., `/redeem 123456`).
+2. Buy Me a Coffee: attach email with /redeem command (e.g., `/redeem 123@x.com`). **Use different email each time.**
+3. Telegram Payment & Tron(TRX): automatically activated within 60s. Check /start to see your balance.
+
+Want to buy more token with Telegram payment? Let's say 100? Here you go! `/buy 123`
