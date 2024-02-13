@@ -8,6 +8,9 @@
 __author__ = "Benny <benny.think@gmail.com>"
 
 import os
+import io
+import string
+import logging
 
 from config import (
     AFD_LINK,
@@ -18,79 +21,28 @@ from config import (
     TOKEN_PRICE,
 )
 from database import InfluxDB
-from utils import get_func_queue
+from utils import get_func_queue, get_text_from_file
 
+const_dic = {
+    "AFD_LINK": AFD_LINK,
+    "COFFEE_LINK": COFFEE_LINK,
+    "ENABLE_CELERY": ENABLE_CELERY,
+    "FREE_DOWNLOAD": FREE_DOWNLOAD,
+    "REQUIRED_MEMBERSHIP": REQUIRED_MEMBERSHIP,
+    "TOKEN_PRICE": TOKEN_PRICE,
+}
 
 class BotText:
-    start = """
-    Welcome to YouTube Download bot. Type /help for more information. 
-    Backup bot: @benny_2ytdlbot
-    Join https://t.me/+OGRC8tp9-U9mZDZl for updates."""
-
-    help = f"""
-1. If the bot doesn't work, try again or join https://t.me/+OGRC8tp9-U9mZDZl for updates.
-
-2. Source code: https://github.com/tgbot-collection/ytdlbot
-    """
-
-    about = "YouTube Downloader by @BennyThink.\n\nOpen source on GitHub: https://github.com/tgbot-collection/ytdlbot"
-
-    buy = f"""
-**Terms:**
-1. You can use this bot to download video for {FREE_DOWNLOAD} times within a 24-hour period.
-
-2. You can buy additional download tokens, valid permanently.
-
-3. Refunds are possible, contact me if you need that @BennyThink
-
-4. Download for paid user will be automatically changed to Local mode to avoid queuing.
-
-5. Paid user can download files larger than 2GB.
-
-**Price:**
-valid permanently
-1. 1 USD == {TOKEN_PRICE} tokens
-2. 7 CNY == {TOKEN_PRICE} tokens
-3. 10 TRX == {TOKEN_PRICE} tokens
-
-**Payment options:**
-Pay any amount you want. For example you can send 20 TRX for {TOKEN_PRICE * 2} tokens.
-1. AFDIAN(AliPay, WeChat Pay and PayPal): {AFD_LINK}
-2. Buy me a coffee: {COFFEE_LINK}
-3. Telegram Bot Payment(Stripe), please click Bot Payment button.
-4. TRON(TRX), please click TRON(TRX) button.
-
-**After payment:**
-1. Afdian: attach order number with /redeem command (e.g., `/redeem 123456`).
-2. Buy Me a Coffee: attach email with /redeem command (e.g., `/redeem 123@x.com`). **Use different email each time.**
-3. Telegram Payment & Tron(TRX): automatically activated within 60s. Check /start to see your balance.
-
-Want to buy more token with Telegram payment? Let's say 100? Here you go! `/buy 123`
-    """
-
-    private = "This bot is for private use"
-
-    membership_require = f"You need to join this group or channel to use this bot\n\nhttps://t.me/{REQUIRED_MEMBERSHIP}"
-
-    settings = """
-Please choose the preferred format and video quality for your video. These settings only **apply to YouTube videos**.
-
-High quality is recommended. Medium quality aims to 720P, while low quality is 480P.
-
-If you choose to send the video as a document, it will not be possible to stream it.
-
-Your current settings:
-Video quality: **{0}**
-Sending format: **{1}**
-"""
     custom_text = os.getenv("CUSTOM_TEXT", "")
 
-    premium_warning = """
-    Your file is too big, do you want me to try to send it as premium user? 
-    This is an experimental feature so you can only use it once per day.
-    Also, the premium user will know who you are and what you are downloading. 
-    You may be banned if you abuse this feature.
-    """
+    start = get_text_from_file("../texts/start").format(**const_dic)
+    help = get_text_from_file("../texts/help").format(**const_dic)
+    about =  get_text_from_file("../texts/about").format(**const_dic)
+    buy =  get_text_from_file("../texts/buy").format(**const_dic)
+    private = get_text_from_file("../texts/private").format(**const_dic)
+    membership_require = get_text_from_file("../texts/membership_require").format(**const_dic)
+    settings = get_text_from_file("../texts/settings")
+    premium_warning = get_text_from_file("../texts/premium_warning").format(**const_dic)
 
     @staticmethod
     def get_receive_link_text() -> str:

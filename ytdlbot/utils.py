@@ -9,6 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import contextlib
 import inspect as pyinspect
+import io
 import logging
 import os
 import pathlib
@@ -210,6 +211,16 @@ def clean_tempfile():
     for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
         if time.time() - item.stat().st_ctime > 3600:
             shutil.rmtree(item, ignore_errors=True)
+
+def get_text_from_file(path_to_file: str) -> str:
+    text_path = os.path.abspath(path_to_file)
+
+    if not os.path.isfile(text_path):
+        return ""
+
+    with io.open(text_path, "r", encoding="utf-8") as stream:
+        return stream.read()
+
 
 
 if __name__ == "__main__":
