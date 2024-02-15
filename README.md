@@ -148,38 +148,54 @@ vim env/ytdl.env
 
 You can configure all the following environment variables:
 
-* WORKERS: workers count for celery
-* PYRO_WORKERS: number of workers for pyrogram, default is 100
-* APP_ID: **REQUIRED**, get it from https://core.telegram.org/
-* APP_HASH: **REQUIRED**
-* TOKEN: **REQUIRED**
-* REDIS: **REQUIRED if you need VIP mode and cache** ⚠️ Don't publish your redis server on the internet. ⚠️
-* EXPIRE: token expire time, default: 1 day
-* ENABLE_VIP: enable VIP mode
-* OWNER: owner username
-* AUTHORIZED_USER: only authorized users can use the bot
-* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot
-* ENABLE_CELERY: celery mode, default: disable
-* BROKER: celery broker, should be redis://redis:6379/0
-* MYSQL_HOST:MySQL host
-* MYSQL_USER: MySQL username
-* MYSQL_PASS: MySQL password
-* AUDIO_FORMAT: default audio format
-* ARCHIVE_ID: forward all downloads to this group/channel
-* IPv6 = os.getenv("IPv6", False)
-* ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
-* PROVIDER_TOKEN: stripe token on Telegram payment
-* PLAYLIST_SUPPORT: download playlist support
-* M3U8_SUPPORT: download m3u8 files support
-* ENABLE_ARIA2: enable aria2c download
-* FREE_DOWNLOAD: free download count per day
-* TOKEN_PRICE: token price per 1 USD
-* GOOGLE_API_KEY: YouTube API key, required for YouTube video subscription.
-* RCLONE_PATH: rclone path to upload files to cloud storage
-* TMPFILE_PATH: tmpfile path(file download path)
-* TRONGRID_KEY: TronGrid key, better use your own key to avoid rate limit
-* TRON_MNEMONIC: Tron mnemonic, the default one is on nile testnet.
-* PREMIUM_USER: premium user ID, it can help you to download files larger than 2 GiB
+* `WORKERS`: workers count for celery
+* `PYRO_WORKERS`: number of workers for pyrogram, default is 100
+* `APP_ID`: **REQUIRED**, get it from https://core.telegram.org/
+* `APP_HASH`: **REQUIRED**
+* `TOKEN`: **REQUIRED**
+* `REDIS`: **REQUIRED if you need VIP mode and cache** ⚠️ Don't publish your redis server on the internet. ⚠️
+* `EXPIRE`: token expire time, default: 1 day
+* `ENABLE_VIP`: enable VIP mode
+* `OWNER`: owner username
+* `AUTHORIZED_USER`: only authorized users can use the bot
+* `REQUIRED_MEMBERSHIP`: group or channel username, user must join this group to use the bot
+* `ENABLE_CELERY`: celery mode, default: disable
+* `BROKER`: celery broker, should be redis://redis:6379/0
+* `MYSQL_HOST`:MySQL host
+* `MYSQL_USER`: MySQL username
+* `MYSQL_PASS`: MySQL password
+* `AUDIO_FORMAT`: default audio format
+* `ARCHIVE_ID`: forward all downloads to this group/channel
+* `IPv6` = os.getenv("IPv6", False)
+* `ENABLE_FFMPEG` = os.getenv("ENABLE_FFMPEG", False)
+* `PROVIDER_TOKEN`: stripe token on Telegram payment
+* `PLAYLIST_SUPPORT`: download playlist support
+* `M3U8_SUPPORT`: download m3u8 files support
+* `ENABLE_ARIA2`: enable aria2c download
+* `FREE_DOWNLOAD`: free download count per day
+* `TOKEN_PRICE`: token price per 1 USD
+* `GOOGLE_API_KEY`: YouTube API key, required for YouTube video subscription.
+* `RCLONE_PATH`: rclone path to upload files to cloud storage
+* `TMPFILE_PATH`: tmpfile path(file download path)
+* `TRONGRID_KEY`: TronGrid key, better use your own key to avoid rate limit
+* `TRON_MNEMONIC`: Tron mnemonic, the default one is on nile testnet.
+* `PREMIUM_USER`: premium user ID, it can help you to download files larger than 2 GiB
+* `DEFAULT_QUALITY`: Default video quality. Can be assigned the following values:
+  
+  `highest` - best available video.
+  
+  `high` - best video available but no better than 1080p or the worst video 
+  
+  if there is no video under 1080p (default value)
+  
+  `medium` - best video available but no better than 720p or the worst video 
+  if there is no video under 720p (default value)
+  
+  `low` - best video available but no better than 480p or the worst video 
+  if there is no video under 480p
+  
+  `lowest` - best video available but no better than 360p or the worst video 
+  if there is no video under 360p
 
 ## 3.2 Set up init data
 

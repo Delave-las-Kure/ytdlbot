@@ -23,7 +23,7 @@ import coloredlogs
 import ffmpeg
 import psutil
 
-from config import TMPFILE_PATH
+from config import DEFAULT_QUALITY, TMPFILE_PATH
 from flower_tasks import app
 
 inspect = app.control.inspect()
@@ -75,6 +75,43 @@ def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
     if settings[2] == "audio":
         formats.insert(0, "bestaudio[ext=m4a]")
 
+
+def get_default_video_format():
+    if DEFAULT_QUALITY == 'highest':
+        return [
+           # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bv*[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+ba[ext=m4a]/bv+ba",
+            "bv*[vcodec^=avc]+ba[acodec^=mp4a]/b[vcodec^=avc]/b",
+            None,
+        ]
+    elif DEFAULT_QUALITY == "high":
+        return [
+           # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bv*[ext=mp4][vcodec!*=av01][vcodec!*=vp09][height<=1080]+ba[ext=m4a]/wv*+ba/w",
+            "bv*[vcodec^=avc][height<=1080]+ba[acodec^=mp4a]/w[vcodec^=avc]/w",
+            None,
+        ]
+    elif DEFAULT_QUALITY == "medium":
+        return [
+           # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bv*[ext=mp4][vcodec!*=av01][vcodec!*=vp09][height<=720]+ba[ext=m4a]/wv*+ba/w",
+            "bv*[vcodec^=avc][height<=720]+ba[acodec^=mp4a]/w[vcodec^=avc]/w",
+            None,
+        ]
+    elif DEFAULT_QUALITY == "low":
+        return [
+           # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bv*[ext=mp4][vcodec!*=av01][vcodec!*=vp09][height<=480]+ba[ext=m4a]/wv*+ba/w",
+            "bv*[vcodec^=avc][height<=480]+ba[acodec^=mp4a]/w[vcodec^=avc]/w",
+            None,
+        ]
+    elif DEFAULT_QUALITY == "lowest":
+        return [
+           # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+            "bv*[ext=mp4][vcodec!*=av01][vcodec!*=vp09][height<=360]+ba[ext=m4a]/wv*+ba/w",
+            "bv*[vcodec^=avc][height<=360]+ba[acodec^=mp4a]/w[vcodec^=avc]/w",
+            None,
+        ]
 
 def get_metadata(video_path):
     width, height, duration = 1280, 720, 0

@@ -54,6 +54,17 @@ ARCHIVE_ID = os.getenv("ARCHIVE_ID")
 IPv6 = os.getenv("IPv6", False)
 ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
 
+# highest - best video available
+# high - best video available but no better than 1080p or the worst video 
+# if there is no video under 1080p (default value)
+# medium - best video available but no better than 720p or the worst video 
+# if there is no video under 720p (default value)
+# low - best video available but no better than 480p or the worst video 
+# if there is no video under 480p
+# lowest - best video available but no better than 360p or the worst video 
+# if there is no video under 360p
+DEFAULT_QUALITY = os.getenv("DEFAULT_QUALITY", "medium")
+
 PLAYLIST_SUPPORT = os.getenv("PLAYLIST_SUPPORT", False)
 M3U8_SUPPORT = os.getenv("M3U8_SUPPORT", False)
 ENABLE_ARIA2 = os.getenv("ENABLE_ARIA2", False)

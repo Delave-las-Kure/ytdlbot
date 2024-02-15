@@ -38,7 +38,7 @@ from config import (
     IPv6,
 )
 from limit import Payment
-from utils import adjust_formats, apply_log_formatter, current_time, sizeof_fmt
+from utils import adjust_formats, apply_log_formatter, current_time, get_default_video_format, sizeof_fmt
 
 apply_log_formatter()
 
@@ -213,12 +213,8 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
         formats = ["source"]
     else:
         # Use the default formats for other URLs.
-        formats = [
-            # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
-            "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
-            "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
-            None,
-        ]
+        formats = get_default_video_format()
+        print(formats)
     adjust_formats(chat_id, url, formats, hijack)
     if download_instagram(url, tempdir):
         return list(pathlib.Path(tempdir).glob("*"))
