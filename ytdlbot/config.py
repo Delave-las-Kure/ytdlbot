@@ -34,7 +34,11 @@ OWNER = os.getenv("OWNER", "BennyThink")
 AUTHORIZED_USER: str = os.getenv("AUTHORIZED_USER", "")
 # membership requires: the format could be username(without @ sign)/chat_id of channel or group.
 # You need to add the bot to this group/channel as admin
-REQUIRED_MEMBERSHIP: str = os.getenv("REQUIRED_MEMBERSHIP", "")
+REQUIRED_MEMBERSHIPS: list[str] = list(
+    filter(
+        None, map(lambda v: v.strip(), os.getenv("REQUIRED_MEMBERSHIPS", "").split(","))
+    )
+)
 
 # celery related
 IS_BACKUP_BOT = os.getenv("IS_BACKUP_BOT")
@@ -55,13 +59,13 @@ IPv6 = os.getenv("IPv6", False)
 ENABLE_FFMPEG = os.getenv("ENABLE_FFMPEG", False)
 
 # highest - best video available
-# high - best video available but no better than 1080p or the worst video 
+# high - best video available but no better than 1080p or the worst video
 # if there is no video under 1080p (default value)
-# medium - best video available but no better than 720p or the worst video 
+# medium - best video available but no better than 720p or the worst video
 # if there is no video under 720p (default value)
-# low - best video available but no better than 480p or the worst video 
+# low - best video available but no better than 480p or the worst video
 # if there is no video under 480p
-# lowest - best video available but no better than 360p or the worst video 
+# lowest - best video available but no better than 360p or the worst video
 # if there is no video under 360p
 DEFAULT_QUALITY = os.getenv("DEFAULT_QUALITY", "medium")
 
@@ -88,7 +92,10 @@ FREE_DOWNLOAD = os.getenv("FREE_DOWNLOAD", 10)
 TOKEN_PRICE = os.getenv("BUY_UNIT", 20)  # one USD=20 credits
 TRONGRID_KEY = os.getenv("TRONGRID_KEY", "").split(",")
 # the default mnemonic is for nile testnet
-TRON_MNEMONIC = os.getenv("TRON_MNEMONIC", "cram floor today legend service drill pitch leaf car govern harvest soda")
+TRON_MNEMONIC = os.getenv(
+    "TRON_MNEMONIC",
+    "cram floor today legend service drill pitch leaf car govern harvest soda",
+)
 TRX_SIGNAL = signal("trx_received")
 
 PREMIUM_USER = int(os.getenv("PREMIUM_USER", "0"))

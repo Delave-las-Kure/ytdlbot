@@ -61,7 +61,7 @@ you can configure all the following environment variables:
 * AFD_USER_ID
 
 * AUTHORIZED_USER: users that could use this bot, user_id, separated with `,`
-* REQUIRED_MEMBERSHIP: group or channel username, user must join this group to use the bot. Could be use with
+* REQUIRED_MEMBERSHIPS: group or channel username, user must join this group to use the bot. Could be use with
   above `AUTHORIZED_USER`
 
 * ENABLE_CELERY: Distribution mode, default: disable. You'll can setup workers in different locations.
