@@ -43,7 +43,7 @@ from config import (
     PLAYLIST_SUPPORT,
     PREMIUM_USER,
     PROVIDER_TOKEN,
-    REQUIRED_MEMBERSHIP,
+    REQUIRED_MEMBERSHIPS,
     TOKEN_PRICE,
     TRX_SIGNAL,
 )
@@ -86,21 +86,26 @@ def private_use(func):
         if users and chat_id and chat_id not in users:
             message.reply_text(BotText.private, quote=True)
             return
-
-        if REQUIRED_MEMBERSHIP:
-            try:
-                member: types.ChatMember | Any = app.get_chat_member(REQUIRED_MEMBERSHIP, chat_id)
-                if member.status not in [
-                    enums.ChatMemberStatus.ADMINISTRATOR,
-                    enums.ChatMemberStatus.MEMBER,
-                    enums.ChatMemberStatus.OWNER,
-                ]:
-                    raise UserNotParticipant()
-                else:
-                    logging.info("user %s check passed for group/channel %s.", chat_id, REQUIRED_MEMBERSHIP)
-            except UserNotParticipant:
-                logging.warning("user %s is not a member of group/channel %s", chat_id, REQUIRED_MEMBERSHIP)
-                message.reply_text(BotText.membership_require, quote=True)
+        
+        if REQUIRED_MEMBERSHIPS:
+            need_membership_list = []
+            for membership in REQUIRED_MEMBERSHIPS:
+                try:
+                    member: types.ChatMember | Any = app.get_chat_member(membership, chat_id)
+                    if member.status not in [
+                        enums.ChatMemberStatus.ADMINISTRATOR,
+                        enums.ChatMemberStatus.MEMBER,
+                        enums.ChatMemberStatus.OWNER,
+                    ]:
+                        raise UserNotParticipant()
+                    else:
+                        logging.info("user %s check passed for group/channel %s.", chat_id, membership)
+                except UserNotParticipant:
+                    logging.warning("user %s is not a member of group/channel %s", chat_id, membership)
+                    need_membership_list.append(membership)
+  
+            if need_membership_list:
+                message.reply_text(BotText.get_membership_require_text(need_membership_list), quote=True)
                 return
 
         return func(client, message)

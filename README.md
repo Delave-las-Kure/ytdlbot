@@ -158,7 +158,7 @@ You can configure all the following environment variables:
 * `ENABLE_VIP`: enable VIP mode
 * `OWNER`: owner username
 * `AUTHORIZED_USER`: only authorized users can use the bot
-* `REQUIRED_MEMBERSHIP`: group or channel username, user must join this group to use the bot
+* `REQUIRED_MEMBERSHIPS`: group or channel username, user must join this group to use the bot. You can specify multiple groups separated by commas: `ch1,ch2`.
 * `ENABLE_CELERY`: celery mode, default: disable
 * `BROKER`: celery broker, should be redis://redis:6379/0
 * `MYSQL_HOST`:MySQL host

@@ -17,7 +17,7 @@ from config import (
     COFFEE_LINK,
     ENABLE_CELERY,
     FREE_DOWNLOAD,
-    REQUIRED_MEMBERSHIP,
+    REQUIRED_MEMBERSHIPS,
     TOKEN_PRICE,
 )
 from database import InfluxDB
@@ -28,7 +28,7 @@ const_dic = {
     "COFFEE_LINK": COFFEE_LINK,
     "ENABLE_CELERY": ENABLE_CELERY,
     "FREE_DOWNLOAD": FREE_DOWNLOAD,
-    "REQUIRED_MEMBERSHIP": REQUIRED_MEMBERSHIP,
+    "REQUIRED_MEMBERSHIPS": REQUIRED_MEMBERSHIPS,
     "TOKEN_PRICE": TOKEN_PRICE,
 }
 
@@ -40,9 +40,16 @@ class BotText:
     about =  get_text_from_file("../texts/about").format(**const_dic)
     buy =  get_text_from_file("../texts/buy").format(**const_dic)
     private = get_text_from_file("../texts/private").format(**const_dic)
-    membership_require = get_text_from_file("../texts/membership_require").format(**const_dic)
     settings = get_text_from_file("../texts/settings")
     premium_warning = get_text_from_file("../texts/premium_warning").format(**const_dic)
+
+    @staticmethod
+    def get_membership_require_text(channels: list[str]):
+        str = []
+        for ch in channels:
+            str.append(f"https://t.me/{ch}")
+
+        return get_text_from_file("../texts/membership_require").format(**const_dic, MEMBERSHIP_LINKS = "\n".join(str))
 
     @staticmethod
     def get_receive_link_text() -> str:
