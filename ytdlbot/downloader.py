@@ -38,7 +38,13 @@ from config import (
     IPv6,
 )
 from limit import Payment
-from utils import adjust_formats, apply_log_formatter, current_time, get_default_video_format, sizeof_fmt
+from utils import (
+    adjust_formats,
+    apply_log_formatter,
+    current_time,
+    get_default_video_format,
+    sizeof_fmt,
+)
 
 apply_log_formatter()
 
@@ -154,9 +160,15 @@ def convert_to_mp4(video_paths: list, bot_msg):
         if mime in default_type:
             if not can_convert_mp4(path, bot_msg.chat.id):
                 logging.warning("Conversion abort for %s", bot_msg.chat.id)
-                bot_msg._client.send_message(bot_msg.chat.id, "Can't convert your video. ffmpeg has been disabled.")
+                bot_msg._client.send_message(
+                    bot_msg.chat.id,
+                    "Can't convert your video. ffmpeg has been disabled.",
+                )
                 break
-            edit_text(bot_msg, f"{current_time()}: Converting {path.name} to mp4. Please wait.")
+            edit_text(
+                bot_msg,
+                f"{current_time()}: Converting {path.name} to mp4. Please wait.",
+            )
             new_file_path = path.with_suffix(".mp4")
             logging.info("Detected %s, converting to mp4...", mime)
             run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, new_file_path], bot_msg)
@@ -199,6 +211,9 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
         "outtmpl": output,
         "restrictfilenames": False,
         "quiet": True,
+        "extractor_args": {
+            "tiktok": {"api_hostname": "api22-normal-c-useast2a.tiktokv.com"}
+        },
     }
     if ENABLE_ARIA2:
         ydl_opts["external_downloader"] = "aria2c"
@@ -237,7 +252,9 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
                 raise e
             except Exception:
                 error = traceback.format_exc()
-                logging.error("Download failed for %s - %s, try another way", format_, url)
+                logging.error(
+                    "Download failed for %s - %s, try another way", format_, url
+                )
         if error is None:
             break
 
@@ -262,7 +279,11 @@ def convert_audio_format(video_paths: list, bm):
 
     for path in video_paths:
         streams = ffmpeg.probe(path)["streams"]
-        if AUDIO_FORMAT is None and len(streams) == 1 and streams[0]["codec_type"] == "audio":
+        if (
+            AUDIO_FORMAT is None
+            and len(streams) == 1
+            and streams[0]["codec_type"] == "audio"
+        ):
             logging.info("%s is audio, default format, no need to convert", path)
         elif AUDIO_FORMAT is None and len(streams) >= 2:
             logging.info("%s is video, default format, need to extract audio", path)
@@ -273,7 +294,9 @@ def convert_audio_format(video_paths: list, bm):
                     break
             ext = audio_stream["codec_name"]
             new_path = path.with_suffix(f".{ext}")
-            run_ffmpeg_progressbar(["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm)
+            run_ffmpeg_progressbar(
+                ["ffmpeg", "-y", "-i", path, "-vn", "-acodec", "copy", new_path], bm
+            )
             path.unlink()
             index = video_paths.index(path)
             video_paths[index] = new_path
@@ -294,7 +317,9 @@ def split_large_video(video_paths: list):
         if size > TG_NORMAL_MAX_SIZE:
             split = True
             logging.warning("file is too large %s, splitting...", size)
-            subprocess.check_output(f"sh split-video.sh {original_video} {TG_NORMAL_MAX_SIZE * 0.95} ".split())
+            subprocess.check_output(
+                f"sh split-video.sh {original_video} {TG_NORMAL_MAX_SIZE * 0.95} ".split()
+            )
             os.remove(original_video)
 
     if split and original_video:
