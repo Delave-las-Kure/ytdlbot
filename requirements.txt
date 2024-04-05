@@ -26,4 +26,4 @@ mnemonic==0.21
 qrcode==7.4.2
 blinker==1.7.0
 flask===3.0.2
-yt-dlp==2024.3.31.232706.dev0
+yt-dlp==2024.4.4.232729.dev0

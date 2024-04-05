@@ -212,7 +212,7 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
         "restrictfilenames": False,
         "quiet": True,
         "extractor_args": {
-            "tiktok": {"api_hostname": "api22-normal-c-useast2a.tiktokv.com"}
+            "tiktok": {"app_version": "27.8.1","manifest_app_version": "2022708010"}
         },
     }
     if ENABLE_ARIA2:
