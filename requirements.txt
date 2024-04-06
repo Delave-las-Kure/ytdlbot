@@ -27,3 +27,4 @@ qrcode==7.4.2
 blinker==1.7.0
 flask===3.0.2
 yt-dlp==2024.4.4.232729.dev0
+cryptography==42.0.5

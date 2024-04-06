@@ -225,7 +225,7 @@ class MySQL:
         resolution varchar(128) null,
         method     varchar(64)  null,
         mode varchar(32) default 'Celery' null,
-        history varchar(10) default 'OFF' null,
+        history varchar(10) default 'ON' null,
         constraint settings_pk
             primary key (user_id)
     );
@@ -268,8 +268,9 @@ class MySQL:
                 host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASS, db="ytdl", charset="utf8mb4"
             )
             self.con.ping(reconnect=True)
-        except Exception:
+        except Exception as error:
             logging.warning("MySQL connection failed, using fake mysql instead.")
+            logging.warning(error)
             self.con = FakeMySQL()
 
         self.con.ping(reconnect=True)
