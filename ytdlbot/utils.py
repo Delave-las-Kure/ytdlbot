@@ -18,10 +18,13 @@ import subprocess
 import tempfile
 import time
 import uuid
+import re
 
 import coloredlogs
 import ffmpeg
 import psutil
+from urllib.parse import quote_plus
+from http.cookiejar import MozillaCookieJar
 
 from config import DEFAULT_QUALITY, TMPFILE_PATH
 from flower_tasks import app
@@ -265,6 +268,50 @@ def get_text_from_file(path_to_file: str) -> str:
     with io.open(text_path, "r", encoding="utf-8") as stream:
         return stream.read()
 
+
+
+def parse_cookie_file(cookiefile):
+    jar = MozillaCookieJar(cookiefile)
+    jar.load()
+    return {cookie.name: cookie.value for cookie in jar}
+
+
+def extract_code_from_instagram_url(url):
+    # Regular expression patterns
+    patterns = [
+        r"/p/([a-zA-Z0-9_-]+)/",   # Posts
+        r"/reel/([a-zA-Z0-9_-]+)/" # Reels
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
+
+
+def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
+  #Shortens a URL by cutting it to a specified length.
+  shortened_url = url[:CAPTION_URL_LENGTH_LIMIT - 3] + "..."
+
+  return shortened_url
+
+
+def extract_filename(response):
+    try:
+        content_disposition = response.headers.get("content-disposition")
+        if content_disposition:
+            filename = re.findall("filename=(.+)", content_disposition)[0]
+            return filename
+    except (TypeError, IndexError):
+        pass  # Handle potential exceptions during extraction
+
+    # Fallback if Content-Disposition header is missing
+    filename = response.url.rsplit("/")[-1]
+    if not filename:
+        filename = quote_plus(response.url)
+    return filename
 
 
 if __name__ == "__main__":

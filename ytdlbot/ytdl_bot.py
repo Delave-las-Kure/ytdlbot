@@ -11,6 +11,7 @@ import contextlib
 import json
 import logging
 import os
+import threading
 import random
 import re
 import tempfile
@@ -37,7 +38,6 @@ from config import (
     ENABLE_CELERY,
     ENABLE_FFMPEG,
     ENABLE_VIP,
-    IS_BACKUP_BOT,
     M3U8_SUPPORT,
     OWNER,
     PLAYLIST_SUPPORT,
@@ -46,6 +46,7 @@ from config import (
     REQUIRED_MEMBERSHIPS,
     TOKEN_PRICE,
     TRX_SIGNAL,
+    ENABLE_ARIA2,
 )
 from constant import BotText
 from database import InfluxDB, MySQL, Redis
@@ -54,9 +55,11 @@ from tasks import app as celery_app
 from tasks import (
     audio_entrance,
     direct_download_entrance,
+    leech_download_entrance,
     hot_patch,
     purge_tasks,
     ytdl_download_entrance,
+    spdl_download_entrance,
 )
 from utils import auto_restart, clean_tempfile, customize_logger, get_revision
 
@@ -206,11 +209,33 @@ def purge_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["ping"]))
 def ping_handler(client: Client, message: types.Message):
+    chat_id = message.chat.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_sent = False
+    def send_message_and_measure_ping():
+        start_time = int(round(time.time() * 1000))
+        reply = client.send_message(chat_id, "Starting Ping...")
+        end_time = int(round(time.time() * 1000))
+        ping_time = int(round(end_time - start_time))
+        message_sent = True
+        if message_sent:
+            message.reply_text(f"Ping: {ping_time:.2f} ms", quote=True)
+        time.sleep(0.5)
+        client.edit_message_text(chat_id=reply.chat.id, message_id=reply.id, text="Ping Calculation Complete.")
+        time.sleep(1)
+        client.delete_messages(chat_id=reply.chat.id, message_ids=reply.id)
+            
+    thread = threading.Thread(target=send_message_and_measure_ping)
+    thread.start()
+
+
+@app.on_message(filters.command(["stats"]))
+def stats_handler(client: Client, message: types.Message):
     redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
-        bot_info = "ping unavailable."
+        bot_info = "Stats Unavailable."
     else:
         bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
     if message.chat.username == OWNER:
@@ -249,6 +274,23 @@ def clear_history(client: Client, message: types.Message):
     message.reply_text("History cleared.", quote=True)
 
 
+@app.on_message(filters.command(["spdl"]))
+def spdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/spdl\s*", "", message.text)
+    logging.info("spdl start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("spdl_request")
+    spdl_download_entrance(client, bot_msg, url)
+
+
 @app.on_message(filters.command(["direct"]))
 def direct_handler(client: Client, message: types.Message):
     redis = Redis()
@@ -264,6 +306,26 @@ def direct_handler(client: Client, message: types.Message):
     bot_msg = message.reply_text("Request received.", quote=True)
     redis.update_metrics("direct_request")
     direct_download_entrance(client, bot_msg, url)
+
+
+@app.on_message(filters.command(["leech"]))
+def leech_handler(client: Client, message: types.Message):
+    if not ENABLE_ARIA2:
+        message.reply_text("Aria2 Not Enabled.", quote=True)
+        return
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    url = re.sub(r"/leech\s*", "", message.text)
+    logging.info("leech using aria2 start %s", url)
+    if not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Send me a correct LINK.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("leech_request")
+    leech_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["settings"]))
@@ -630,12 +692,11 @@ if __name__ == "__main__":
     scheduler = BackgroundScheduler(timezone="Europe/London")
     scheduler.add_job(auto_restart, "interval", seconds=600)
     scheduler.add_job(clean_tempfile, "interval", seconds=120)
-    if not IS_BACKUP_BOT:
-        scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
-        scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
-        scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
-        #  default quota allocation of 10,000 units per day
-        scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
+    scheduler.add_job(Redis().reset_today, "cron", hour=0, minute=0)
+    scheduler.add_job(InfluxDB().collect_data, "interval", seconds=120)
+    # scheduler.add_job(TronTrx().check_payment, "interval", seconds=60, max_instances=1)
+    #  default quota allocation of 10,000 units per day
+    # scheduler.add_job(periodic_sub_check, "interval", seconds=3600)
     scheduler.start()
     banner = f"""
 ▌ ▌         ▀▛▘     ▌       ▛▀▖              ▜            ▌
