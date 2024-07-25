@@ -258,7 +258,8 @@ class MySQL:
     (
         user_id bigint null,
         link varchar(256) null,
-        title varchar(512) null
+        title varchar(512) null,
+        downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
     ) CHARSET=utf8mb4;
     """
 
@@ -293,7 +294,7 @@ class MySQL:
         self.cur.execute("SELECT * FROM settings WHERE user_id = %s", (user_id,))
         data = self.cur.fetchone()
         if data is None:
-            return 100, "high", "video", "Celery", "OFF"
+            return 100, "high", "video", "Celery", "ON"
         return data
 
     def set_user_settings(self, user_id: int, field: str, value: str):
@@ -308,7 +309,7 @@ class MySQL:
             if field == "method":
                 method = value
                 resolution = "high"
-            cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s,%s)", (user_id, resolution, method, "Celery", "OFF"))
+            cur.execute("INSERT INTO settings VALUES (%s,%s,%s,%s,%s)", (user_id, resolution, method, "Celery", "ON"))
         else:
             cur.execute(f"UPDATE settings SET {field} =%s WHERE user_id = %s", (value, user_id))
         self.con.commit()
@@ -323,7 +324,7 @@ class MySQL:
         self.con.commit()
 
     def add_history(self, user_id: int, link: str, title: str):
-        self.cur.execute("INSERT INTO history VALUES (%s,%s,%s)", (user_id, link, title))
+        self.cur.execute("INSERT INTO history (user_id, link, title) VALUES (%s,%s,%s)", (user_id, link, title))
         self.con.commit()
 
     def search_history(self, user_id: int, kw: str):
