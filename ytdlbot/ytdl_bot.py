@@ -10,16 +10,16 @@ __author__ = "Benny <benny.think@gmail.com>"
 import contextlib
 import json
 import logging
-import os
-import threading
 import random
 import re
 import tempfile
+import threading
 import time
 import traceback
 from io import BytesIO
 from typing import Any
 
+import psutil
 import pyrogram.errors
 import qrcode
 import yt_dlp
@@ -28,7 +28,6 @@ from pyrogram import Client, enums, filters, types
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
 from pyrogram.raw import functions
 from pyrogram.raw import types as raw_types
-from tgbot_ping import get_runtime
 from youtubesearchpython import VideosSearch
 
 from channel import Channel
@@ -61,7 +60,15 @@ from tasks import (
     ytdl_download_entrance,
     spdl_download_entrance,
 )
-from utils import auto_restart, clean_tempfile, customize_logger, get_revision
+from utils import (
+    sizeof_fmt,
+    timeof_fmt,
+    auto_restart,
+    clean_tempfile,
+    customize_logger,
+    get_revision,
+    extract_url_and_name,
+)
 
 logging.info("Authorized users are %s", AUTHORIZED_USER)
 customize_logger(["pyrogram.client", "pyrogram.session.session", "pyrogram.connection.connection"])
@@ -212,6 +219,7 @@ def ping_handler(client: Client, message: types.Message):
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
     message_sent = False
+
     def send_message_and_measure_ping():
         start_time = int(round(time.time() * 1000))
         reply = client.send_message(chat_id, "Starting Ping...")
@@ -224,25 +232,59 @@ def ping_handler(client: Client, message: types.Message):
         client.edit_message_text(chat_id=reply.chat.id, message_id=reply.id, text="Ping Calculation Complete.")
         time.sleep(1)
         client.delete_messages(chat_id=reply.chat.id, message_ids=reply.id)
-            
+
     thread = threading.Thread(target=send_message_and_measure_ping)
     thread.start()
 
 
 @app.on_message(filters.command(["stats"]))
 def stats_handler(client: Client, message: types.Message):
-    redis = Redis()
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    if os.uname().sysname == "Darwin" or ".heroku" in os.getenv("PYTHONHOME", ""):
-        bot_info = "Stats Unavailable."
-    else:
-        bot_info = get_runtime("ytdlbot_ytdl_1", "YouTube-dl")
+    cpu_usage = psutil.cpu_percent()
+    total, used, free, disk = psutil.disk_usage("/")
+    swap = psutil.swap_memory()
+    memory = psutil.virtual_memory()
+    boot_time = psutil.boot_time()
+
+    owner_stats = (
+        "\n\n⌬─────「 Stats 」─────⌬\n\n"
+        f"<b>╭🖥️ **CPU Usage »**</b>  __{cpu_usage}%__\n"
+        f"<b>├💾 **RAM Usage »**</b>  __{memory.percent}%__\n"
+        f"<b>╰🗃️ **DISK Usage »**</b>  __{disk}%__\n\n"
+        f"<b>╭📤Upload:</b> {sizeof_fmt(psutil.net_io_counters().bytes_sent)}\n"
+        f"<b>╰📥Download:</b> {sizeof_fmt(psutil.net_io_counters().bytes_recv)}\n\n\n"
+        f"<b>Memory Total:</b> {sizeof_fmt(memory.total)}\n"
+        f"<b>Memory Free:</b> {sizeof_fmt(memory.available)}\n"
+        f"<b>Memory Used:</b> {sizeof_fmt(memory.used)}\n"
+        f"<b>SWAP Total:</b> {sizeof_fmt(swap.total)} | <b>SWAP Usage:</b> {swap.percent}%\n\n"
+        f"<b>Total Disk Space:</b> {sizeof_fmt(total)}\n"
+        f"<b>Used:</b> {sizeof_fmt(used)} | <b>Free:</b> {sizeof_fmt(free)}\n\n"
+        f"<b>Physical Cores:</b> {psutil.cpu_count(logical=False)}\n"
+        f"<b>Total Cores:</b> {psutil.cpu_count(logical=True)}\n\n"
+        f"<b>🤖Bot Uptime:</b> {timeof_fmt(time.time() - botStartTime)}\n"
+        f"<b>⏲️OS Uptime:</b> {timeof_fmt(time.time() - boot_time)}\n"
+    )
+
+    user_stats = (
+        "\n\n⌬─────「 Stats 」─────⌬\n\n"
+        f"<b>╭🖥️ **CPU Usage »**</b>  __{cpu_usage}%__\n"
+        f"<b>├💾 **RAM Usage »**</b>  __{memory.percent}%__\n"
+        f"<b>╰🗃️ **DISK Usage »**</b>  __{disk}%__\n\n"
+        f"<b>╭📤Upload:</b> {sizeof_fmt(psutil.net_io_counters().bytes_sent)}\n"
+        f"<b>╰📥Download:</b> {sizeof_fmt(psutil.net_io_counters().bytes_recv)}\n\n\n"
+        f"<b>Memory Total:</b> {sizeof_fmt(memory.total)}\n"
+        f"<b>Memory Free:</b> {sizeof_fmt(memory.available)}\n"
+        f"<b>Memory Used:</b> {sizeof_fmt(memory.used)}\n"
+        f"<b>Total Disk Space:</b> {sizeof_fmt(total)}\n"
+        f"<b>Used:</b> {sizeof_fmt(used)} | <b>Free:</b> {sizeof_fmt(free)}\n\n"
+        f"<b>🤖Bot Uptime:</b> {timeof_fmt(time.time() - botStartTime)}\n"
+    )
+
     if message.chat.username == OWNER:
-        stats = BotText.ping_worker()[:1000]
-        client.send_document(chat_id, redis.generate_file(), caption=f"{bot_info}\n\n{stats}")
+        message.reply_text(owner_stats, quote=True)
     else:
-        client.send_message(chat_id, f"{bot_info.split('CPU')[0]}")
+        message.reply_text(user_stats, quote=True)
 
 
 @app.on_message(filters.command(["sub_count"]))
@@ -272,60 +314,6 @@ def clear_history(client: Client, message: types.Message):
     chat_id = message.chat.id
     MySQL().clear_history(chat_id)
     message.reply_text("History cleared.", quote=True)
-
-
-@app.on_message(filters.command(["spdl"]))
-def spdl_handler(client: Client, message: types.Message):
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/spdl\s*", "", message.text)
-    logging.info("spdl start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("spdl_request")
-    spdl_download_entrance(client, bot_msg, url)
-
-
-@app.on_message(filters.command(["direct"]))
-def direct_handler(client: Client, message: types.Message):
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/direct\s*", "", message.text)
-    logging.info("direct start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Send me a DIRECT LINK.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("direct_request")
-    direct_download_entrance(client, bot_msg, url)
-
-
-@app.on_message(filters.command(["leech"]))
-def leech_handler(client: Client, message: types.Message):
-    if not ENABLE_ARIA2:
-        message.reply_text("Aria2 Not Enabled.", quote=True)
-        return
-    redis = Redis()
-    chat_id = message.from_user.id
-    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
-    url = re.sub(r"/leech\s*", "", message.text)
-    logging.info("leech using aria2 start %s", url)
-    if not re.findall(r"^https?://", url.lower()):
-        redis.update_metrics("bad_request")
-        message.reply_text("Send me a correct LINK.", quote=True)
-        return
-
-    bot_msg = message.reply_text("Request received.", quote=True)
-    redis.update_metrics("leech_request")
-    leech_download_entrance(client, bot_msg, url)
 
 
 @app.on_message(filters.command(["settings"]))
@@ -371,6 +359,8 @@ def settings_handler(client: Client, message: types.Message):
 
 @app.on_message(filters.command(["buy"]))
 def buy_handler(client: Client, message: types.Message):
+    return client.send_message(message.chat.id, "This feature will comback soon...")
+
     # process as chat.id, not from_user.id
     chat_id = message.chat.id
     client.send_chat_action(chat_id, enums.ChatAction.TYPING)
@@ -511,6 +501,81 @@ def search_ytb(kw: str):
     return text
 
 
+@app.on_message(filters.command(["spdl"]))
+def spdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_text = message.text
+    url, new_name = extract_url_and_name(message_text)
+    logging.info("spdl start %s", url)
+    if url is None or not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("spdl_request")
+    spdl_download_entrance(client, bot_msg, url)
+
+
+@app.on_message(filters.command(["direct"]))
+def direct_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_text = message.text
+    url, new_name = extract_url_and_name(message_text)
+    logging.info("direct start %s", url)
+    if url is None or not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Send me a DIRECT LINK.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("direct_request")
+    direct_download_entrance(client, bot_msg, url, new_name)
+
+
+@app.on_message(filters.command(["leech"]))
+def leech_handler(client: Client, message: types.Message):
+    if not ENABLE_ARIA2:
+        message.reply_text("Aria2 Not Enabled.", quote=True)
+        return
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_text = message.text
+    url, new_name = extract_url_and_name(message_text)
+    logging.info("leech using aria2 start %s", url)
+    if url is None or not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Send me a correct LINK.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("leech_request")
+    leech_download_entrance(client, bot_msg, url)
+
+
+@app.on_message(filters.command(["ytdl"]))
+def ytdl_handler(client: Client, message: types.Message):
+    redis = Redis()
+    chat_id = message.from_user.id
+    client.send_chat_action(chat_id, enums.ChatAction.TYPING)
+    message_text = message.text
+    url, new_name = extract_url_and_name(message_text)
+    logging.info("ytdl start %s", url)
+    if url is None or not re.findall(r"^https?://", url.lower()):
+        redis.update_metrics("bad_request")
+        message.reply_text("Something wrong 🤔.\nCheck your URL and send me again.", quote=True)
+        return
+
+    bot_msg = message.reply_text("Request received.", quote=True)
+    redis.update_metrics("ytdl_request")
+    ytdl_download_entrance(client, bot_msg, url)
+
+
 @app.on_message(filters.incoming & (filters.text | filters.document))
 @private_use
 def download_handler(client: Client, message: types.Message):
@@ -526,7 +591,7 @@ def download_handler(client: Client, message: types.Message):
             contents = open(tf.name, "r").read()  # don't know why
         urls = contents.split()
     else:
-        urls = [re.sub(r"/ytdl\s*", "", message.text)]
+        urls = [message.text]
         logging.info("start %s", urls)
 
     for url in urls:
@@ -687,6 +752,7 @@ def trx_notify(_, **kwargs):
 
 
 if __name__ == "__main__":
+    botStartTime = time.time()
     MySQL()
     TRX_SIGNAL.connect(trx_notify)
     scheduler = BackgroundScheduler(timezone="Europe/London")

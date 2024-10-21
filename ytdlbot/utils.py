@@ -13,18 +13,18 @@ import io
 import logging
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
 import time
 import uuid
-import re
+from http.cookiejar import MozillaCookieJar
+from urllib.parse import quote_plus
 
 import coloredlogs
 import ffmpeg
 import psutil
-from urllib.parse import quote_plus
-from http.cookiejar import MozillaCookieJar
 
 from config import DEFAULT_QUALITY, TMPFILE_PATH
 from flower_tasks import app
@@ -53,6 +53,16 @@ def sizeof_fmt(num: int, suffix="B"):
     return "%.1f%s%s" % (num, "Yi", suffix)
 
 
+def timeof_fmt(seconds: int):
+    periods = [("d", 86400), ("h", 3600), ("m", 60), ("s", 1)]
+    result = ""
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            result += f"{int(period_value)}{period_name}"
+    return result
+
+
 def is_youtube(url: str):
     if url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
         return True
@@ -77,6 +87,9 @@ def adjust_formats(user_id: int, url: str, formats: list, hijack=None):
 
     if settings[2] == "audio":
         formats.insert(0, "bestaudio[ext=m4a]")
+
+    if settings[2] == "document":
+        formats.insert(0, None)
 
 
 def get_default_video_format():
@@ -255,9 +268,13 @@ def auto_restart():
 
 
 def clean_tempfile():
-    for item in pathlib.Path(TMPFILE_PATH or tempfile.gettempdir()).glob("ytdl-*"):
-        if time.time() - item.stat().st_ctime > 3600:
-            shutil.rmtree(item, ignore_errors=True)
+    patterns = ["ytdl*", "spdl*", "leech*", "direct*"]
+    temp_path = pathlib.Path(TMPFILE_PATH or tempfile.gettempdir())
+    
+    for pattern in patterns:
+        for item in temp_path.glob(pattern):
+            if time.time() - item.stat().st_ctime > 3600:
+                shutil.rmtree(item, ignore_errors=True)
 
 def get_text_from_file(path_to_file: str) -> str:
     text_path = os.path.abspath(path_to_file)
@@ -278,24 +295,21 @@ def parse_cookie_file(cookiefile):
 
 def extract_code_from_instagram_url(url):
     # Regular expression patterns
-    patterns = [
-        r"/p/([a-zA-Z0-9_-]+)/",   # Posts
-        r"/reel/([a-zA-Z0-9_-]+)/" # Reels
-    ]
-    
+    patterns = [r"/p/([a-zA-Z0-9_-]+)/", r"/reel/([a-zA-Z0-9_-]+)/"]  # Posts  # Reels
+
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
-    
+
     return None
 
 
 def shorten_url(url, CAPTION_URL_LENGTH_LIMIT):
-  #Shortens a URL by cutting it to a specified length.
-  shortened_url = url[:CAPTION_URL_LENGTH_LIMIT - 3] + "..."
+    # Shortens a URL by cutting it to a specified length.
+    shortened_url = url[: CAPTION_URL_LENGTH_LIMIT - 3] + "..."
 
-  return shortened_url
+    return shortened_url
 
 
 def extract_filename(response):
@@ -312,6 +326,23 @@ def extract_filename(response):
     if not filename:
         filename = quote_plus(response.url)
     return filename
+
+
+def extract_url_and_name(message_text):
+    # Regular expression to match the URL
+    url_pattern = r'(https?://[^\s]+)'
+    # Regular expression to match the new name after '-n'
+    name_pattern = r'-n\s+([^\s]+)'
+
+    # Find the URL in the message_text
+    url_match = re.search(url_pattern, message_text)
+    url = url_match.group(0) if url_match else None
+
+    # Find the new name in the message_text
+    name_match = re.search(name_pattern, message_text)
+    new_name = name_match.group(1) if name_match else None
+
+    return url, new_name
 
 
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ from unittest.mock import MagicMock
 import ffmpeg
 import ffpb
 import filetype
-import requests
 import yt_dlp as ytdl
 from pyrogram import types
 from tqdm import tqdm
@@ -121,12 +120,6 @@ def remove_bash_color(text):
 
 
 def download_hook(d: dict, bot_msg):
-    # since we're using celery, server location may be located in different region.
-    # Therefore, we can't trigger the hook very often.
-    # the key is user_id + download_link
-    original_url = d["info_dict"]["original_url"]
-    key = f"{bot_msg.chat.id}-{original_url}"
-
     if d["status"] == "downloading":
         downloaded = d.get("downloaded_bytes", 0)
         total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
@@ -143,6 +136,7 @@ def download_hook(d: dict, bot_msg):
         speed = remove_bash_color(d.get("_speed_str", "N/A"))
         eta = remove_bash_color(d.get("_eta_str", d.get("eta")))
         text = tqdm_progress("Downloading...", total, downloaded, speed, eta)
+        # debounce in here
         edit_text(bot_msg, text)
 
 
@@ -229,7 +223,14 @@ def ytdl_download(url: str, tempdir: str, bm, **kwargs) -> list:
     else:
         # Use the default formats for other URLs.
         formats = get_default_video_format()
-        print(formats)
+        # print(formats)
+        # formats = [
+        #     # webm , vp9 and av01 are not streamable on telegram, so we'll extract only mp4
+        #     "bestvideo[ext=mp4][vcodec!*=av01][vcodec!*=vp09]+bestaudio[ext=m4a]/bestvideo+bestaudio",
+        #     "bestvideo[vcodec^=avc]+bestaudio[acodec^=mp4a]/best[vcodec^=avc]/best",
+        #     None,
+        # ]
+    # This method will alter formats if necessary
     adjust_formats(chat_id, url, formats, hijack)
     address = ["::", "0.0.0.0"] if IPv6 else [None]
     error = None
